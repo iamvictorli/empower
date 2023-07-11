@@ -1,118 +1,282 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import { useState } from "react";
+import InputMask from "react-input-mask";
+import { Loader2 } from "lucide-react";
 
-const inter = Inter({ subsets: ['latin'] })
+// styling with empower design language, should be similar to the signup flow for empower
+//
+// download link, universal link/deep link?
+//
+// error for fetching
+
+function convertToPhoneNumberFormat(number: string) {
+  var formattedNumber =
+    "(" +
+    number.substring(0, 3) +
+    ") " +
+    number.substring(3, 6) +
+    "-" +
+    number.substring(6);
+  return formattedNumber;
+}
+
+function PhoneNumberForm({
+  onSuccessfulSubmission,
+}: {
+  onSuccessfulSubmission: (phoneNumber: string) => void;
+}) {
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const phoneNumberNumericString = phoneNumber.replace(/\D/g, ""); // Removes non-numeric characters from the string. Example (123) 456-7890 -> 1234567890
+    setIsSubmitting(true);
+    const response = await fetch("/api/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ phoneNumber: phoneNumberNumericString }),
+    });
+    setIsSubmitting(false);
+
+    if (response.ok) {
+      onSuccessfulSubmission(phoneNumberNumericString);
+      return;
+    }
+
+    const data = await response.json();
+    const error = data.error;
+    setError(error);
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <label htmlFor="phoneNumber" className="font-semibold text-base">
+        Enter your phone number
+      </label>
+      <div className="h-4" />
+      <InputMask
+        id="phoneNumber"
+        name="phoneNumber"
+        className="pl-6 w-full h-12 sm:w-[300px] mb-4 rounded-full border-2 border-camel text-[15px] font-light"
+        aria-label="Mobile number"
+        mask="(999) 999-9999"
+        type="tel"
+        pattern="\(\d{3}\) \d{3}-\d{4}"
+        placeholder="(000) 000-0000"
+        required
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setPhoneNumber(e.target.value)
+        }
+      />
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="bg-black text-white w-full h-12 sm:w-[148px] sm:mx-4 rounded-full text-[15px] font-semibold disabled:pointer-events-none disabled:opacity-50 inline-flex justify-center items-center"
+      >
+        Sign up
+        {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+      </button>
+      {error && (
+        <div className="text-base font-medium text-destructive">{error}</div>
+      )}
+    </form>
+  );
+}
+
+function TwoFactorAuthForm({
+  onSuccessfulSubmission,
+  values,
+}: {
+  onSuccessfulSubmission: () => void;
+  values: { phoneNumber?: string };
+}) {
+  const [authCode, setAuthCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const response = await fetch("/api/authenticate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ phoneNumber: values.phoneNumber, code: authCode }),
+    });
+    setIsSubmitting(false);
+
+    if (response.ok) {
+      onSuccessfulSubmission();
+      return;
+    }
+
+    const data = await response.json();
+    const error = data.error;
+    setError(error);
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <label htmlFor="authCode" className="font-semibold text-base">
+        Enter 6-digit code
+      </label>
+      <div className="h-4" />
+      <InputMask
+        id="authCode"
+        name="authCode"
+        className="pl-6 w-full h-12 sm:w-[300px] mb-4 rounded-full border-2 border-camel text-[15px] font-light"
+        mask="aaaaaa"
+        type="text"
+        pattern="[A-Z]{6}"
+        placeholder="AAAAAA"
+        required
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setAuthCode(e.target.value.toUpperCase())
+        }
+        value={authCode}
+      />
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="bg-black text-white w-full h-12 sm:w-[148px] sm:mx-4 rounded-full text-[15px] font-semibold disabled:pointer-events-none disabled:opacity-50 inline-flex justify-center items-center"
+      >
+        Verify
+        {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+      </button>
+      {error && (
+        <div className="text-base font-medium text-destructive">{error}</div>
+      )}
+    </form>
+  );
+}
+
+function PhoneNumberVerification({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <div className="px-6">
+        <h1 className="text-[40px] font-bold font-serif leading-dense tracking-[-.01em]">
+          Get Cash Advance up to $250 in less than{" "}
+          <span className="whitespace-nowrap">5 minutes</span>
+        </h1>
+        <div aria-hidden className="h-4" />
+      </div>
+
+      <div className="px-6">
+        <h2 className="text-lg leading-[26px] text-gray">
+          No interest. No late fees. No credit checks. Eligibility applies.
+        </h2>
+      </div>
+      {children}
+    </>
+  );
+}
+
+function TwoFactorAuthVerification({
+  phoneNumber,
+  children,
+}: {
+  phoneNumber: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <div className="px-6">
+        <h1 className="text-[40px] font-bold font-serif leading-dense tracking-[-.01em]">
+          Verify your number
+        </h1>
+        <div aria-hidden className="h-4" />
+      </div>
+
+      <div className="px-6">
+        <h2 className="text-lg leading-[26px] text-gray">
+          We sent the SMS code to {convertToPhoneNumberFormat(phoneNumber)}
+        </h2>
+      </div>
+      {children}
+    </>
+  );
+}
 
 export default function Home() {
+  const [form, setForm] = useState("phone-number");
+  // save values needed for other forms
+  const [values, setValues] = useState({});
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+    <>
+      <div className="flex flex-col-reverse lg:flex-row">
+        <div className="bg-pastel-peach w-full lg:max-w-[542px]">
+          {form === "phone-number" && (
+            <img
+              src="https://app.empower.me/_next/static/media/bg1.b99a82af.png"
+              className="w-full"
+              alt="Empower background photo"
             />
-          </a>
+          )}
+          {form === "two-factor-auth" && (
+            <img
+              src="https://app.empower.me/_next/static/media/bg2.2b94b465.png"
+              className="w-full"
+              alt="Empower background photo"
+            />
+          )}
+        </div>
+
+        <div className="container">
+          <div className="px-6 py-8">
+            <img
+              alt="Empower logo"
+              src="https://app.empower.me/_next/static/media/empower-logo.87a83332.svg"
+            />
+          </div>
+
+          {form === "phone-number" && (
+            <PhoneNumberVerification>
+              <div className="px-6 py-8">
+                <PhoneNumberForm
+                  onSuccessfulSubmission={(phoneNumber) => {
+                    setValues((prevValues) => ({ ...prevValues, phoneNumber }));
+                    setForm("two-factor-auth");
+                  }}
+                />
+              </div>
+            </PhoneNumberVerification>
+          )}
+
+          {form === "two-factor-auth" && (
+            // @ts-ignore
+            <TwoFactorAuthVerification phoneNumber={values.phoneNumber}>
+              <div className="px-6 py-8">
+                <TwoFactorAuthForm
+                  onSuccessfulSubmission={() => setForm("success")}
+                  values={values}
+                />
+              </div>
+            </TwoFactorAuthVerification>
+          )}
+          {/* Legal */}
+          <div className="py-6 px-6">
+            <div className="text-xs text-gray">
+              By signing up, you agree to our Privacy Policy, Terms and E-Sign.
+              Message and data rates may apply.
+            </div>
+            <div className="h-6" />
+            <div className="text-xs text-gray">
+              Empower is a financial technology company, not a bank. Banking
+              services provided by nbkc bank, Member FDIC. Empower Thrive
+              provided by FinWise Bank, Member FDIC. Empower charges an
+              auto-recurring monthly subscription fee of $8 (a) after the 14-day
+              free trial concludes for first-time customers, and (b) immediately
+              for customers returning for a second or subsequent subscription.
+              Instant delivery fees may apply.
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    </>
+  );
 }
