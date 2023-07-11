@@ -54,7 +54,7 @@ function PhoneNumberForm({
   return (
     <form onSubmit={onSubmit}>
       <label htmlFor="phoneNumber" className="font-semibold text-base">
-        Enter your phone number
+        Enter your phone number:
       </label>
       <div className="h-4" />
       <InputMask
