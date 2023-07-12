@@ -27,6 +27,15 @@ export async function registerPhoneNumber(phoneNumber: string) {
     throw new Error("Phone number already registered");
   }
 
+  const phoneNumberValidated = await redis.sismember(
+    "validatedPhoneNumbers",
+    phoneNumber
+  );
+
+  if (phoneNumberValidated) {
+    throw new Error("Phone number already validated");
+  }
+
   // generate a random 2FA code, for now AAAAAA authenticates
   await redis.set(phoneNumber, "AAAAAA");
 }
@@ -45,4 +54,7 @@ export async function authenticatePhoneNumber(
   }
 
   await redis.del(phoneNumber);
+
+  // Create an account with the phone number, for now we'll add the phone number to the set
+  await redis.sadd("validatedPhoneNumbers", phoneNumber);
 }
