@@ -2,11 +2,17 @@ import { useState } from "react";
 import InputMask from "react-input-mask";
 import { Loader2 } from "lucide-react";
 
-// styling with empower design language, should be similar to the signup flow for empower
-//
-// download link, universal link/deep link?
-//
-// error for fetching
+function getDeviceLink() {
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  if (/android/.test(userAgent)) {
+    return "https://play.google.com/store/apps/details?id=finance.empower";
+  } else if (/iphone|ipod|ipad/.test(userAgent)) {
+    return "https://apps.apple.com/us/app/empower-cash-advance-%24250/id1136397354";
+  } else {
+    return "Unable to find device link";
+  }
+}
 
 function convertToPhoneNumberFormat(number: string) {
   var formattedNumber =
@@ -96,6 +102,7 @@ function TwoFactorAuthForm({
   const [authCode, setAuthCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [deviceLink, setDeviceLink] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -111,6 +118,7 @@ function TwoFactorAuthForm({
 
     if (response.ok) {
       onSuccessfulSubmission();
+      setDeviceLink(getDeviceLink());
       return;
     }
 
@@ -150,6 +158,7 @@ function TwoFactorAuthForm({
       {error && (
         <div className="text-base font-medium text-destructive">{error}</div>
       )}
+      {deviceLink && <div className="text-base font-medium">{deviceLink}</div>}
     </form>
   );
 }
@@ -252,7 +261,7 @@ export default function Home() {
             <TwoFactorAuthVerification phoneNumber={values.phoneNumber}>
               <div className="px-6 py-8">
                 <TwoFactorAuthForm
-                  onSuccessfulSubmission={() => setForm("success")}
+                  onSuccessfulSubmission={() => {}}
                   values={values}
                 />
               </div>
