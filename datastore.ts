@@ -13,7 +13,7 @@ function generate2FA() {
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let code = "";
 
-  for (var i = 0; i < AUTH_CODE_LENGTH; i++) {
+  for (let i = 0; i < AUTH_CODE_LENGTH; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
     code += characters.charAt(randomIndex);
   }
